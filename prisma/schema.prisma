@@ -1,0 +1,249 @@
+// Salon & Barber Appointment Booking — Database Schema
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  SUPER_ADMIN
+  SALON_OWNER
+  CUSTOMER
+}
+
+enum EntityStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum ListingStatus {
+  DRAFT
+  PENDING_APPROVAL
+  APPROVED
+  REJECTED
+}
+
+enum VerificationStatus {
+  NONE
+  PENDING
+  VERIFIED
+  REJECTED
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+}
+
+enum PaymentMethod {
+  PAY_AT_SALON
+  RAZORPAY_CARD
+  RAZORPAY_UPI
+}
+
+enum PaymentStatus {
+  UNPAID // Pay at Salon — settled in person, nothing to collect online
+  PENDING // Online payment initiated, waiting for Razorpay confirmation
+  PAID
+  FAILED
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String
+  phone     String?
+  role      Role     @default(CUSTOMER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  bookings      Booking[]
+  notifications Notification[]
+  ownedSalons   Salon[]        @relation("SalonOwner")
+  reviews Review[]
+
+  @@index([role])
+  @@index([email])
+}
+
+model Salon {
+  id               String        @id @default(cuid())
+  ownerId          String?
+  name             String
+  description      String        @default("")
+  logo             String?
+  images           String        @default("[]") // JSON array of image URLs
+  address          String
+  city             String
+  contactNumber    String
+  openingTime      String // "09:00"
+  closingTime      String // "19:00"
+  workingDays      String        @default("[\"Mon\",\"Tue\",\"Wed\",\"Thu\",\"Fri\",\"Sat\"]") // JSON
+  status           EntityStatus  @default(ACTIVE)
+  listingStatus    ListingStatus @default(DRAFT)
+  rejectionReason  String?
+  submittedAt      DateTime?
+  reviewedAt       DateTime?
+  verificationStatus         VerificationStatus @default(NONE)
+  verificationMessage        String?
+  verificationRejectionReason String?
+  verificationRequestedAt    DateTime?
+  verifiedAt                 DateTime?
+  isPremium                  Boolean @default(false)
+  rating           Float         @default(0)
+  category         String        @default("Unisex")
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+
+  owner    User?     @relation("SalonOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+  barbers  Barber[]
+  services Service[]
+  bookings Booking[]
+  reviews Review[]
+
+  @@index([city])
+  @@index([status])
+  @@index([listingStatus])
+  @@index([verificationStatus])
+  @@index([ownerId])
+  @@index([name])
+}
+
+model Barber {
+  id              String       @id @default(cuid())
+  salonId         String
+  name            String
+  profilePhoto    String?
+  bio             String       @default("")
+  yearsExperience Int          @default(0)
+  specialization  String
+  skills          String       @default("[]") // JSON array
+  rating          Float        @default(0)
+  workingDays     String       @default("[\"Mon\",\"Tue\",\"Wed\",\"Thu\",\"Fri\",\"Sat\"]") // JSON
+  workStartTime   String       @default("10:00")
+  workEndTime     String       @default("19:00")
+  breakStartTime  String?
+  breakEndTime    String?
+  status          EntityStatus @default(ACTIVE)
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  salon          Salon           @relation(fields: [salonId], references: [id], onDelete: Cascade)
+  barberServices BarberService[]
+  bookings       Booking[]
+  reviews        Review[]          
+
+  @@index([salonId])
+  @@index([status])
+}
+
+model Service {
+  id          String       @id @default(cuid())
+  salonId     String
+  name        String
+  description String       @default("")
+  price       Float
+  duration    Int // minutes
+  status      EntityStatus @default(ACTIVE)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  salon          Salon           @relation(fields: [salonId], references: [id], onDelete: Cascade)
+  barberServices BarberService[]
+  bookings       Booking[]
+
+  @@index([salonId])
+  @@index([status])
+}
+
+model BarberService {
+  id        String @id @default(cuid())
+  barberId  String
+  serviceId String
+
+  barber  Barber  @relation(fields: [barberId], references: [id], onDelete: Cascade)
+  service Service @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+
+  @@unique([barberId, serviceId])
+  @@index([barberId])
+  @@index([serviceId])
+}
+
+model Booking {
+  id              String        @id @default(cuid())
+  customerId      String
+  salonId         String
+  barberId        String
+  serviceId       String
+  appointmentDate String // "YYYY-MM-DD"
+  startTime       String // "17:00"
+  endTime         String // "17:30"
+  price           Float
+  status          BookingStatus @default(PENDING)
+  ownerNote       String?
+
+  paymentMethod     PaymentMethod @default(PAY_AT_SALON)
+  paymentStatus     PaymentStatus @default(UNPAID)
+  razorpayOrderId   String?
+  razorpayPaymentId String?
+  razorpaySignature String?
+
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  customer User    @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  salon    Salon   @relation(fields: [salonId], references: [id], onDelete: Cascade)
+  barber   Barber  @relation(fields: [barberId], references: [id], onDelete: Cascade)
+  service  Service @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  review Review?
+
+  // Concurrency-safe double-booking prevention
+  @@unique([barberId, appointmentDate, startTime], name: "unique_barber_slot")
+  @@index([customerId])
+  @@index([salonId])
+  @@index([barberId])
+  @@index([appointmentDate])
+  @@index([status])
+}
+model Review {
+  id        String   @id @default(cuid())
+  bookingId String   @unique
+  customerId String
+  salonId   String
+  barberId  String
+  rating    Int // 1-5
+  comment   String   @default("")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  booking  Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  customer User    @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  salon    Salon   @relation(fields: [salonId], references: [id], onDelete: Cascade)
+  barber   Barber  @relation(fields: [barberId], references: [id], onDelete: Cascade)
+
+  @@index([salonId])
+  @@index([barberId])
+  @@index([customerId])
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  title     String
+  message   String
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([read])
+}
+

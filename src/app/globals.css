@@ -1,0 +1,177 @@
+@import "tailwindcss";
+
+:root {
+  --cream: #f7f3ec;
+  --surface: #fffcf7;
+  --ink: #1c1917;
+  --muted: #78716c;
+  --border: #e7e0d6;
+  --accent: #0f766e;
+  --accent-dark: #0d5c56;
+  --accent-soft: #ccfbf1;
+  --gold: #b45309;
+  --danger: #be123c;
+  --background: var(--cream);
+  --foreground: var(--ink);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-body);
+  --font-display: var(--font-display);
+}
+
+body {
+  background:
+    radial-gradient(ellipse 80% 50% at 10% -10%, #d8f3ef 0%, transparent 50%),
+    radial-gradient(ellipse 60% 40% at 100% 0%, #f5e6d3 0%, transparent 45%),
+    var(--cream);
+  color: var(--ink);
+  font-family: var(--font-body), system-ui, sans-serif;
+  min-height: 100vh;
+}
+
+.font-display {
+  font-family: var(--font-display), Georgia, serif;
+}
+
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 0.75rem;
+  background: var(--accent);
+  color: white;
+  font-weight: 600;
+  padding: 0.625rem 1.25rem;
+  transition: background 0.15s ease, transform 0.15s ease;
+}
+
+.btn-primary:hover {
+  background: var(--accent-dark);
+}
+
+.btn-primary:active {
+  transform: scale(0.98);
+}
+
+.btn-primary:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 0.75rem;
+  background: var(--ink);
+  color: var(--cream);
+  font-weight: 600;
+  padding: 0.625rem 1.25rem;
+  transition: opacity 0.15s ease;
+}
+
+.btn-secondary:hover {
+  opacity: 0.9;
+}
+
+.btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 0.75rem;
+  color: var(--muted);
+  padding: 0.5rem 0.75rem;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.btn-ghost:hover {
+  background: rgba(28, 25, 23, 0.05);
+  color: var(--ink);
+}
+
+.btn-danger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 0.75rem;
+  background: #fff1f2;
+  color: var(--danger);
+  font-weight: 600;
+  padding: 0.625rem 1.25rem;
+  border: 1px solid #fecdd3;
+}
+
+.input {
+  width: 100%;
+  border-radius: 0.75rem;
+  border: 1px solid var(--border);
+  background: white;
+  padding: 0.625rem 0.875rem;
+  color: var(--ink);
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  padding-left: 30px;
+}
+
+.input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.label {
+  display: block;
+  margin-bottom: 0.375rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--ink);
+}
+
+.card {
+  border-radius: 1.25rem;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  box-shadow: 0 1px 2px rgba(28, 25, 23, 0.04);
+}
+
+.slot-available {
+  border: 1px solid #a7f3d0;
+  background: #ecfdf5;
+  color: #047857;
+}
+
+.slot-available:hover,
+.slot-available.selected {
+  background: #059669;
+  border-color: #059669;
+  color: white;
+}
+
+.slot-unavailable {
+  border: 1px solid var(--border);
+  background: #f5f5f4;
+  color: #a8a29e;
+  cursor: not-allowed;
+  text-decoration: line-through;
+}
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-up {
+  animation: fade-up 0.4s ease both;
+}
